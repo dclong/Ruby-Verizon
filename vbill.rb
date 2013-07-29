@@ -39,7 +39,7 @@ def get_due_date(text, statement)
     regex = Regexp.new(/(\d{2}\/\d{2}\/\d{2})/)
     mdata = regex.match(text)
     if mdata.nil?
-        unsupported_format
+        unsupported_format regex, text
     end
     due_date = mdata[1]
     # rename statement if necessary
@@ -51,7 +51,7 @@ def get_total_current_charges(text)
     regex = Regexp.new(/TotalCurrentCharges(-{0,1}\$\d{0,3}\.\d{2})/)
     mdata = regex.match(text)
     if mdata.nil?
-        unsupported_format
+        unsupported_format regex, text
     end
     # find total current charges in cents
     total_current_charges = mdata[1].gsub("\$","").to_f * 100
@@ -61,7 +61,7 @@ def get_credit_balance(text)
     regex = Regexp.new(/CreditBalance(-{0,1}\$\d{0,3}\.\d{2})/)
     mdata = regex.match(text)
     if mdata.nil?
-        unsupported_format
+        return 0
     end
     # find credit balance in cents
     credit_balance = mdata[1].gsub("\$","").to_f * 100
@@ -72,7 +72,7 @@ def get_account_charges(text)
     regex = Regexp.new(/AccountCharges\&Credits(-{0,1}\$\d{0,3}\.\d{2})/)
     mdata = regex.match(text)
     if mdata.nil?
-        unsupported_format
+        unsupported_format regex, text
     end
     # find account charges in cents
     account_charges = mdata[1].gsub("\$","").to_f * 100 
@@ -86,7 +86,7 @@ def get_people_charges(text)
     mdatas = text.map{|x| regex.match(x)}
     mdatas.delete_if{|x| x==nil}
     if mdatas.length == 0
-        unsupported_format
+        unsupported_format regex, text
     end
     # find charges in cents for each person
     people_charges = mdatas.map{ |x| [x[1], x[2].gsub("\$","").to_f * 100] }
@@ -192,9 +192,12 @@ def email_bills(subject, body, path_to_emails)
     puts message
 end
 
-def unsupported_format()
-    abort "Bill information not found.\n"\
-         "Make sure that you have specified the right page containing breakdown of charges.\n"
+def unsupported_format(regex, text)
+    abort "Bill information not found.\n" + 
+         "Make sure that you have specified the right page containing breakdown of charges.\n" + 
+         "---------------------------------------------------\n" +  
+         "Regular expression used:\n" + regex.to_s + "\n" + 
+         "Text searched for regular expression:\n" + text
 end
 
 def read_password()
